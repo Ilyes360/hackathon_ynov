@@ -29,8 +29,13 @@ Interface DEV WEB (React + Vite) connectee a Ollama.
 | Validation entrees (`validatePrompt.js`) | OK — jailbreak + trigger backdoor |
 | Indicateur connexion (`/api/tags`) | OK |
 | Verification headers `X-Compliance-*` | OK |
+| Sessions + localStorage | OK avec reserve (donnees en clair) |
+| Renommage sessions | OK (80 chars, strip HTML) |
+| Parse localStorage | OK (try/catch) |
 | XSS (`dangerouslySetInnerHTML`) | Absent |
 | Logs debug | Limites au mode DEV |
+
+**Point d'attention (nouveau) :** l'historique complet des conversations est persiste dans `localStorage` (`techcorp_chat_sessions`) sans chiffrement — risque de confidentialite sur poste partage.
 
 **Script d'audit :** `scripts/audit_web_chat.py`
 

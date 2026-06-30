@@ -7,8 +7,18 @@ const DEFAULT_MODEL = 'phi3-financial';
 
 function App() {
   const [sessions, setSessions] = useState(() => {
-    const saved = localStorage.getItem('techcorp_chat_sessions');
-    return saved ? JSON.parse(saved) : [{ id: Date.now(), title: 'Discussion du jour', messages: [] }];
+    try {
+      const saved = localStorage.getItem('techcorp_chat_sessions');
+      if (!saved) {
+        return [{ id: Date.now(), title: 'Discussion du jour', messages: [] }];
+      }
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) && parsed.length > 0
+        ? parsed
+        : [{ id: Date.now(), title: 'Discussion du jour', messages: [] }];
+    } catch {
+      return [{ id: Date.now(), title: 'Discussion du jour', messages: [] }];
+    }
   });
 
   const [activeId, setActiveId] = useState(sessions[0].id);
@@ -23,9 +33,10 @@ function App() {
   const messagesEndRef = useRef(null);
 
   const handleSaveTitle = (id) => {
-    if (editTitle.trim()) {
+    const title = editTitle.trim().replace(/<[^>]*>/g, '').slice(0, 80);
+    if (title) {
       setSessions((prev) => prev.map((s) =>
-        s.id === id ? { ...s, title: editTitle.trim() } : s
+        s.id === id ? { ...s, title } : s
       ));
     }
     setEditingSessionId(null);
@@ -204,6 +215,7 @@ function App() {
                       }}
                       autoFocus
                       className="rename-input"
+                      maxLength={80}
                     />
                     <div className="edit-actions">
                       <button
@@ -310,6 +322,7 @@ function App() {
             </button>
           </form>
           <div className="disclaimer">
+            Entrees filtrees (anti-injection). Historique stocke localement (localStorage).
             Ce projet est experimental — l'IA peut faire des erreurs.
           </div>
         </div>

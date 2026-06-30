@@ -65,6 +65,26 @@ def main() -> int:
     if "console.log" in app and "import.meta.env.DEV" not in app:
         add("WARNING", "Logs debug actifs en production", "Encapsuler dans import.meta.env.DEV")
 
+    if "localStorage" in app and "techcorp_chat_sessions" in app:
+        add(
+            "WARNING",
+            "Historique des conversations stocke en clair dans localStorage",
+            "Documenter le risque confidentialite ; envisager chiffrement ou sessionStorage",
+        )
+        if "try" in app and "JSON.parse" in app and "catch" in app:
+            add("INFO", "Parse localStorage protege par try/catch")
+        else:
+            add("WARNING", "JSON.parse(localStorage) sans try/catch — risque crash")
+
+    if "handleSaveTitle" in app:
+        if ".slice(0, 80)" in app or "maxLength={80}" in app:
+            add("INFO", "Titres de session bornes (80 caracteres)")
+        else:
+            add("WARNING", "Renommage de session sans limite de longueur")
+
+    if "maxLength={1500}" in app:
+        add("INFO", "Champ de saisie limite a 1500 caracteres")
+
     print("=" * 60)
     print("AUDIT web-chat")
     print("=" * 60)
