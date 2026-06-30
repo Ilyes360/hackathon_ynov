@@ -17,8 +17,19 @@ function App() {
   const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER);
   const [modelName, setModelName] = useState(DEFAULT_MODEL);
   const [connectionStatus, setConnectionStatus] = useState('checking');
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
 
   const messagesEndRef = useRef(null);
+
+  const handleSaveTitle = (id) => {
+    if (editTitle.trim()) {
+      setSessions((prev) => prev.map((s) =>
+        s.id === id ? { ...s, title: editTitle.trim() } : s
+      ));
+    }
+    setEditingSessionId(null);
+  };
 
   useEffect(() => {
     localStorage.setItem('techcorp_chat_sessions', JSON.stringify(sessions));
@@ -33,9 +44,23 @@ function App() {
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
   const updateSessionMessages = (newMessages) => {
-    setSessions((prev) => prev.map((s) =>
-      s.id === activeId ? { ...s, messages: newMessages } : s
-    ));
+    setSessions((prev) => prev.map((s) => {
+      if (s.id === activeId) {
+        const updated = { ...s, messages: newMessages };
+        // Si le titre actuel est générique ou vide, on le remplace par le début du premier message
+        const isGeneric = s.title === 'Nouvelle discussion' || s.title === 'Discussion du jour' || !s.title;
+        if (isGeneric && newMessages.length > 0) {
+          const firstUserMsg = newMessages.find(m => m.role === 'user');
+          if (firstUserMsg) {
+            const content = firstUserMsg.content;
+            const cleanTitle = content.length > 25 ? content.substring(0, 25) + '...' : content;
+            updated.title = cleanTitle;
+          }
+        }
+        return updated;
+      }
+      return s;
+    }));
   };
 
   const checkConnection = useCallback(async () => {
@@ -154,10 +179,71 @@ function App() {
             {sessions.map((session) => (
               <li
                 key={session.id}
-                className={`history-item ${activeId === session.id ? 'active' : ''}`}
-                onClick={() => setActiveId(session.id)}
+                className={`history-item ${activeId === session.id ? 'active' : ''} ${editingSessionId === session.id ? 'editing' : ''}`}
+                onClick={() => {
+                  if (editingSessionId !== session.id) {
+                    setActiveId(session.id);
+                  }
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setEditingSessionId(session.id);
+                  setEditTitle(session.title || '');
+                }}
+                title="Double-cliquez pour renommer"
               >
-                {session.title || 'Discussion vide'}
+                {editingSessionId === session.id ? (
+                  <div className="history-item-edit" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveTitle(session.id);
+                        if (e.key === 'Escape') setEditingSessionId(null);
+                      }}
+                      autoFocus
+                      className="rename-input"
+                    />
+                    <div className="edit-actions">
+                      <button
+                        className="edit-action-btn save"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveTitle(session.id);
+                        }}
+                        title="Enregistrer"
+                      >
+                        ✔️
+                      </button>
+                      <button
+                        className="edit-action-btn cancel"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingSessionId(null);
+                        }}
+                        title="Annuler"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="history-item-content">
+                    <span className="history-item-title">{session.title || 'Discussion vide'}</span>
+                    <button
+                      className="rename-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingSessionId(session.id);
+                        setEditTitle(session.title || '');
+                      }}
+                      title="Renommer la discussion"
+                    >
+                      ✏️
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -182,9 +268,15 @@ function App() {
               </div>
             ))}
             {isLoading && (
-              <div className="message-row assistant">
-                <div className="avatar">💠</div>
-                <div className="message-bubble typing">...</div>
+              <div className="message-row assistant loading">
+                <div className="avatar loading-avatar">💠</div>
+                <div className="message-bubble typing-bubble">
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -218,7 +310,7 @@ function App() {
             </button>
           </form>
           <div className="disclaimer">
-            Entrees filtrees (anti-injection). Ce projet est experimental — l'IA peut faire des erreurs.
+            Ce projet est experimental — l'IA peut faire des erreurs.
           </div>
         </div>
       </main>

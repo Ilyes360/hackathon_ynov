@@ -143,15 +143,93 @@ body, html {
   padding: 0.6rem 0.8rem;
   border-radius: 12px;
   cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   transition: background 0.2s;
 }
 
 .history-item:hover {
   background-color: var(--hover-color);
   color: var(--text-main);
+}
+
+.history-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.history-item-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.rename-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.9rem;
+  opacity: 0.3;
+  transition: opacity 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-item:hover .rename-btn,
+.history-item.active .rename-btn {
+  opacity: 0.7;
+}
+
+.rename-btn:hover {
+  opacity: 1 !important;
+  transform: scale(1.2);
+}
+
+.history-item-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.rename-input {
+  flex: 1;
+  border: 1px solid #0284c7;
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  outline: none;
+  font-family: inherit;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.1);
+  color: var(--text-main);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.edit-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s;
+}
+
+.edit-action-btn:hover {
+  transform: scale(1.25);
 }
 
 /* ZONE PRINCIPALE */
@@ -208,6 +286,7 @@ body, html {
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .message-row.user {
@@ -242,6 +321,8 @@ body, html {
   line-height: 1.6;
   color: var(--text-main);
   padding: 0.5rem 1rem;
+  white-space: pre-wrap;
+  text-align: justify;
 }
 
 .user .message-bubble {
@@ -345,4 +426,103 @@ body, html {
   font-size: 0.8rem;
   color: var(--text-light);
   margin-top: 1rem;
+}
+
+/* ==========================================
+   ANIMATIONS & EFFETS PREMIUM (HACKATHON IA)
+   ========================================== */
+
+/* Animation d'apparition des messages */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bulle de chargement avec points qui rebondissent */
+.typing-bubble {
+  background-color: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 18px;
+  padding: 0.8rem 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 12px;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background: linear-gradient(135deg, #0369a1, #0d9488);
+  border-radius: 50%;
+  display: inline-block;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% { 
+    transform: scale(0.6);
+    opacity: 0.4;
+  } 
+  40% { 
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Pulsation de l'avatar de l'IA en cours de chargement */
+.loading-avatar {
+  animation: pulseGlow 2s infinite ease-in-out;
+  border: 2px solid rgba(2, 132, 199, 0.2);
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 14px 4px rgba(2, 132, 199, 0.25);
+  }
+}
+
+/* Transition douce sur le bouton d'envoi */
+.send-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.send-btn:not(:disabled) {
+  background: linear-gradient(135deg, #0284c7, #0d9488);
+  color: white;
+}
+
+.send-btn:not(:disabled):hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+}
+
+.send-btn:active {
+  transform: scale(0.95);
 }
