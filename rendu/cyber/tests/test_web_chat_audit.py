@@ -61,3 +61,37 @@ class TestWebChatSecurite:
                 continue
             text = path.read_text(encoding="utf-8", errors="ignore")
             assert not re.search(r"admin:pass\d+", text, re.I)
+
+
+@pytest.mark.static
+class TestWebChatSessions:
+    """Couvre les nouveautes da4ca5a : sessions + localStorage + renommage."""
+
+    def test_gestion_sessions_multiples(self):
+        app = APP.read_text(encoding="utf-8")
+        assert "localStorage" in app
+        assert "techcorp_chat_sessions" in app
+        assert "handleNewChat" in app
+
+    def test_parse_localstorage_protege(self):
+        app = APP.read_text(encoding="utf-8")
+        assert "JSON.parse" in app
+        assert "catch" in app, "localStorage.parse doit etre dans un try/catch"
+
+    def test_input_max_length(self):
+        app = APP.read_text(encoding="utf-8")
+        assert "maxLength={1500}" in app
+
+    def test_titre_session_borne(self):
+        app = APP.read_text(encoding="utf-8")
+        assert "maxLength={80}" in app or ".slice(0, 80)" in app
+
+    def test_titre_session_sans_html(self):
+        app = APP.read_text(encoding="utf-8")
+        assert "handleSaveTitle" in app
+        # Nettoyage HTML dans le titre renomme
+        assert "replace(/<[^>]*>/g" in app
+
+    def test_validation_avant_envoi_api(self):
+        app = APP.read_text(encoding="utf-8")
+        assert app.index("validateUserPrompt") < app.index("fetch(apiUrl")
