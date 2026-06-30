@@ -1,0 +1,326 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
+
+/* RESET VITE : Supprime l'espace blanc à gauche généré par défaut */
+#root {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw;
+  height: 100vh;
+}
+
+:root {
+  --bg-input: rgba(255, 255, 255, 0.7);
+  --text-main: #0f172a;
+  --text-secondary: #334155;
+  --text-light: #64748b;
+  --hover-color: rgba(15, 23, 42, 0.04);
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-main);
+  overflow: hidden;
+}
+
+.layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 10% 10%, #e0f2fe 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, #ccfbf1 0%, transparent 40%),
+              radial-gradient(circle at 50% 50%, #f1f5f9 0%, #f8fafc 100%);
+}
+
+/* SIDEBAR ÉPURÉE */
+.sidebar {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  background: transparent;
+  border-right: 1px solid rgba(255,255,255,0.4);
+}
+
+.sidebar-top {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.logo-area {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-icon {
+  color: #0284c7; 
+}
+
+.new-chat-btn {
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50px;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+.new-chat-btn:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.04);
+}
+
+/* HISTORIQUE */
+.sidebar-history {
+  margin-top: 2rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.history-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-light);
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-left: 0.5rem;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.history-item {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.2s;
+}
+
+.history-item:hover {
+  background-color: var(--hover-color);
+  color: var(--text-main);
+}
+
+/* ZONE PRINCIPALE */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.welcome-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transform: translateX(-100px); /* Recentre le titre vers le milieu de l'écran */
+}
+
+.greeting {
+  font-size: 3.2rem;
+  font-weight: 500;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #0369a1, #0d9488);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.greeting-sub {
+  font-size: 2rem;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 15%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  scroll-behavior: smooth;
+  transform: translateX(-100px); /* Recentre les messages */
+}
+
+.message-row {
+  display: flex;
+  gap: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.message-row.user {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.user .avatar {
+  background-color: #e2e8f0;
+  color: var(--text-main);
+}
+
+.assistant .avatar {
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  color: #0284c7;
+}
+
+.message-bubble {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-main);
+  padding: 0.5rem 1rem;
+}
+
+.user .message-bubble {
+  background-color: rgba(15, 23, 42, 0.05);
+  border-radius: 24px;
+  padding: 1rem 1.5rem;
+}
+
+/* INPUT PILL (LA BULLE) */
+.input-wrapper {
+  padding: 0 10% 2rem 10%;
+  transform: translateX(-100px); /* Recentre la barre de saisie */
+}
+
+.input-pill {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-input);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 50px;
+  padding: 0.6rem 0.6rem 0.6rem 1.5rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  gap: 0.5rem;
+  transition: box-shadow 0.3s ease;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.input-pill:focus-within {
+  box-shadow: 0 12px 40px rgba(2, 132, 199, 0.1);
+}
+
+.main-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.8rem 0;
+  font-size: 1.05rem;
+  color: var(--text-main);
+  outline: none;
+  font-family: inherit;
+}
+
+.main-input::placeholder {
+  color: var(--text-light);
+}
+
+.selectors-group {
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+}
+
+.pill-select {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  padding: 0.6rem 0.8rem;
+  border-radius: 50px;
+  cursor: pointer;
+  outline: none;
+  font-weight: 500;
+  transition: background 0.2s;
+  appearance: none;
+}
+
+.pill-select:hover {
+  background-color: var(--hover-color);
+}
+
+.action-btn {
+  background: #f1f5f9;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--text-main);
+  transition: all 0.2s;
+}
+
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.action-btn:not(:disabled):hover {
+  background-color: #e2e8f0;
+}
+
+.disclaimer {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-top: 1rem;
+}
