@@ -6,19 +6,37 @@ const DEFAULT_SERVER = 'http://100.75.233.27:11434';
 const DEFAULT_MODEL = 'phi3-financial';
 
 function App() {
-  const [messages, setMessages] = useState([]);
+  const [sessions, setSessions] = useState(() => {
+    const saved = localStorage.getItem('techcorp_chat_sessions');
+    return saved ? JSON.parse(saved) : [{ id: Date.now(), title: 'Discussion du jour', messages: [] }];
+  });
+
+  const [activeId, setActiveId] = useState(sessions[0].id);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER);
   const [modelName, setModelName] = useState(DEFAULT_MODEL);
-  const [connectionStatus, setConnectionStatus] = useState('checking'); // connected | disconnected | checking
+  const [connectionStatus, setConnectionStatus] = useState('checking');
 
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem('techcorp_chat_sessions', JSON.stringify(sessions));
+  }, [sessions]);
+
+  const activeSession = sessions.find((s) => s.id === activeId) || sessions[0];
+  const messages = activeSession.messages;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
+
+  const updateSessionMessages = (newMessages) => {
+    setSessions((prev) => prev.map((s) =>
+      s.id === activeId ? { ...s, messages: newMessages } : s
+    ));
+  };
 
   const checkConnection = useCallback(async () => {
     const baseUrl = serverUrl.replace(/\/$/, '');
@@ -43,8 +61,8 @@ function App() {
 
     const validation = validateUserPrompt(input.trim());
     if (!validation.isValid) {
-      setMessages((prev) => [
-        ...prev,
+      updateSessionMessages([
+        ...messages,
         { role: 'user', content: input.trim() },
         { role: 'assistant', content: `Requete bloquee : ${validation.error}`, isError: true },
       ]);
@@ -54,19 +72,13 @@ function App() {
 
     const userMessage = { role: 'user', content: validation.cleanPrompt };
     const chatHistory = [...messages, userMessage];
-
-    setMessages(chatHistory);
+    updateSessionMessages(chatHistory);
     setInput('');
     setIsLoading(true);
 
     const baseUrl = serverUrl.replace(/\/$/, '');
     const apiUrl = `${baseUrl}/api/chat`;
-
-    const requestBody = {
-      model: modelName,
-      messages: chatHistory,
-      stream: false,
-    };
+    const requestBody = { model: modelName, messages: chatHistory, stream: false };
 
     if (import.meta.env.DEV) {
       console.log('[DEBUG] URL:', apiUrl);
@@ -90,16 +102,16 @@ function App() {
       }
 
       const data = await response.json();
-      const aiResponse = data.message?.content || 'Reponse vide de l\'IA.';
-      setMessages((prev) => [...prev, { role: 'assistant', content: aiResponse }]);
+      const aiResponse = data.message?.content || "Reponse vide de l'IA.";
+      updateSessionMessages([...chatHistory, { role: 'assistant', content: aiResponse }]);
       setConnectionStatus('connected');
     } catch (error) {
       setConnectionStatus('disconnected');
-      setMessages((prev) => [
-        ...prev,
+      updateSessionMessages([
+        ...chatHistory,
         {
           role: 'assistant',
-          content: `Erreur : impossible de joindre le serveur (${error.message}). Verifiez l'URL et que Ollama est demarre.`,
+          content: `Erreur : impossible de joindre le serveur (${error.message}).`,
           isError: true,
         },
       ]);
@@ -108,8 +120,10 @@ function App() {
     }
   };
 
-  const handleReset = () => {
-    setMessages([]);
+  const handleNewChat = () => {
+    const newSession = { id: Date.now(), title: 'Nouvelle discussion', messages: [] };
+    setSessions([newSession, ...sessions]);
+    setActiveId(newSession.id);
   };
 
   const statusLabel = {
@@ -129,17 +143,23 @@ function App() {
             <span className="connection-dot" />
             {statusLabel}
           </div>
-          <button className="new-chat-btn" onClick={handleReset}>
+          <button className="new-chat-btn" onClick={handleNewChat}>
             <span className="icon">＋</span> Nouvelle discussion
           </button>
         </div>
 
         <div className="sidebar-history">
-          <h3 className="history-title">Recents</h3>
+          <h3 className="history-title">Historique</h3>
           <ul className="history-list">
-            <li className="history-item">Analyse financiere Q3</li>
-            <li className="history-item">Test modele medical exp...</li>
-            <li className="history-item">Audit de securite infra</li>
+            {sessions.map((session) => (
+              <li
+                key={session.id}
+                className={`history-item ${activeId === session.id ? 'active' : ''}`}
+                onClick={() => setActiveId(session.id)}
+              >
+                {session.title || 'Discussion vide'}
+              </li>
+            ))}
           </ul>
         </div>
       </aside>
@@ -157,12 +177,8 @@ function App() {
           <div className="messages-container">
             {messages.map((msg, index) => (
               <div key={index} className={`message-row ${msg.role}`}>
-                <div className="avatar">
-                  {msg.role === 'user' ? 'U' : '💠'}
-                </div>
-                <div className={`message-bubble ${msg.isError ? 'error-text' : ''}`}>
-                  {msg.content}
-                </div>
+                <div className="avatar">{msg.role === 'user' ? 'U' : '💠'}</div>
+                <div className={`message-bubble ${msg.isError ? 'error-text' : ''}`}>{msg.content}</div>
               </div>
             ))}
             {isLoading && (
@@ -186,28 +202,17 @@ function App() {
               className="main-input"
               maxLength={1500}
             />
-
             <div className="selectors-group">
-              <select
-                className="pill-select"
-                value={modelName}
-                onChange={(e) => setModelName(e.target.value)}
-              >
+              <select className="pill-select" value={modelName} onChange={(e) => setModelName(e.target.value)}>
                 <option value="phi3-financial">phi3-financial</option>
                 <option value="medical_model">Medical</option>
               </select>
-
-              <select
-                className="pill-select"
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-              >
+              <select className="pill-select" value={serverUrl} onChange={(e) => setServerUrl(e.target.value)}>
                 <option value="http://100.75.233.27:11434">Ollama Distant</option>
                 <option value="http://localhost:11434">Ollama Local</option>
                 <option value="http://localhost:8000">Triton</option>
               </select>
             </div>
-
             <button type="submit" className="action-btn send-btn" disabled={isLoading || !input.trim()}>
               ➤
             </button>
