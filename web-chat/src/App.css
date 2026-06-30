@@ -50,8 +50,30 @@ body, html {
 .sidebar-top {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.75rem;
 }
+
+.connection-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  padding: 0.4rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.connection-badge.connected .connection-dot { background: #22c55e; }
+.connection-badge.disconnected .connection-dot { background: #ef4444; }
+.connection-badge.checking .connection-dot { background: #f59e0b; }
 
 .logo-area {
   font-size: 1.3rem;

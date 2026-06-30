@@ -1,96 +1,133 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './App.css';
+import { validateUserPrompt, checkResponseHeaders } from './security/validatePrompt';
+
+const DEFAULT_SERVER = 'http://100.75.233.27:11434';
+const DEFAULT_MODEL = 'phi3-financial';
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Paramètres par défaut avec la nouvelle IP et le nom du modèle
-  const [serverUrl, setServerUrl] = useState('http://100.75.233.27:11434');
-  const [modelName, setModelName] = useState('phi3-financial');
+  const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER);
+  const [modelName, setModelName] = useState(DEFAULT_MODEL);
+  const [connectionStatus, setConnectionStatus] = useState('checking'); // connected | disconnected | checking
 
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
+
+  const checkConnection = useCallback(async () => {
+    const baseUrl = serverUrl.replace(/\/$/, '');
+    setConnectionStatus('checking');
+    try {
+      const res = await fetch(`${baseUrl}/api/tags`, { signal: AbortSignal.timeout(5000) });
+      setConnectionStatus(res.ok ? 'connected' : 'disconnected');
+    } catch {
+      setConnectionStatus('disconnected');
+    }
+  }, [serverUrl]);
+
+  useEffect(() => {
+    checkConnection();
+    const interval = setInterval(checkConnection, 30000);
+    return () => clearInterval(interval);
+  }, [checkConnection]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = { role: 'user', content: input.trim() };
+    const validation = validateUserPrompt(input.trim());
+    if (!validation.isValid) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', content: input.trim() },
+        { role: 'assistant', content: `Requete bloquee : ${validation.error}`, isError: true },
+      ]);
+      setInput('');
+      return;
+    }
+
+    const userMessage = { role: 'user', content: validation.cleanPrompt };
     const chatHistory = [...messages, userMessage];
-    
+
     setMessages(chatHistory);
     setInput('');
     setIsLoading(true);
 
-    const baseUrl = serverUrl.replace(/\/$/, "");
-    const apiUrl = `${baseUrl}/api/chat`; // Retour sur l'endpoint chat
+    const baseUrl = serverUrl.replace(/\/$/, '');
+    const apiUrl = `${baseUrl}/api/chat`;
 
     const requestBody = {
       model: modelName,
-      messages: chatHistory, // L'endpoint chat attend un tableau d'objets "messages"
-      stream: false
+      messages: chatHistory,
+      stream: false,
     };
 
-    // --- DEBUT DES LOGS DE DEBUG ---
-    console.log("🚀 [DEBUG] 1. URL appelée :", apiUrl);
-    console.log("📦 [DEBUG] 2. Payload JSON envoyé à Ollama :", requestBody);
+    if (import.meta.env.DEV) {
+      console.log('[DEBUG] URL:', apiUrl);
+      console.log('[DEBUG] Payload:', requestBody);
+    }
 
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
-
-      console.log("🌐 [DEBUG] 3. Statut HTTP reçu :", response.status, response.statusText);
 
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
       }
-      
+
+      const suspiciousHeaders = checkResponseHeaders(response.headers);
+      if (suspiciousHeaders.length > 0) {
+        console.warn('[SECURITE] Headers suspects detectes:', suspiciousHeaders);
+      }
+
       const data = await response.json();
-      console.log("✅ [DEBUG] 4. Données JSON reçues du serveur :", data);
-
-      // L'endpoint chat renvoie la réponse dans message.content
-      const aiResponse = data.message?.content || "Réponse vide de l'IA.";
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
-
+      const aiResponse = data.message?.content || 'Reponse vide de l\'IA.';
+      setMessages((prev) => [...prev, { role: 'assistant', content: aiResponse }]);
+      setConnectionStatus('connected');
     } catch (error) {
-      console.error("❌ [DEBUG] 5. Erreur critique attrapée :", error);
-      console.error("❌ [DEBUG] Type d'erreur :", error.name);
-      console.error("❌ [DEBUG] Message d'erreur :", error.message);
-      
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `Erreur : Impossible de joindre le serveur. Regarde la console (F12) pour les logs de debug. Détail : ${error.message}`,
-        isError: true 
-      }]);
+      setConnectionStatus('disconnected');
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `Erreur : impossible de joindre le serveur (${error.message}). Verifiez l'URL et que Ollama est demarre.`,
+          isError: true,
+        },
+      ]);
     } finally {
       setIsLoading(false);
-      console.log("🏁 [DEBUG] 6. Fin de la tentative de requête.");
-      // --- FIN DES LOGS DE DEBUG ---
     }
   };
 
   const handleReset = () => {
     setMessages([]);
-    console.clear(); 
-    console.log("🧹 [DEBUG] Historique effacé.");
   };
+
+  const statusLabel = {
+    connected: 'Connecte',
+    disconnected: 'Deconnecte',
+    checking: 'Verification...',
+  }[connectionStatus];
 
   return (
     <div className="layout">
-      {/* Sidebar épurée avec historique conservé */}
       <aside className="sidebar">
         <div className="sidebar-top">
           <div className="logo-area">
             <span className="logo-icon">💠</span> TechCorp
+          </div>
+          <div className={`connection-badge ${connectionStatus}`} title={serverUrl}>
+            <span className="connection-dot" />
+            {statusLabel}
           </div>
           <button className="new-chat-btn" onClick={handleReset}>
             <span className="icon">＋</span> Nouvelle discussion
@@ -98,11 +135,11 @@ function App() {
         </div>
 
         <div className="sidebar-history">
-          <h3 className="history-title">Récents</h3>
+          <h3 className="history-title">Recents</h3>
           <ul className="history-list">
-            <li className="history-item">Analyse financière Q3</li>
-            <li className="history-item">Test modèle médical exp...</li>
-            <li className="history-item">Audit de sécurité infra</li>
+            <li className="history-item">Analyse financiere Q3</li>
+            <li className="history-item">Test modele medical exp...</li>
+            <li className="history-item">Audit de securite infra</li>
           </ul>
         </div>
       </aside>
@@ -111,7 +148,7 @@ function App() {
         {messages.length === 0 ? (
           <div className="welcome-screen">
             <h1 className="greeting">
-              <span className="gradient-text">Bonjour, l'équipe.</span>
+              <span className="gradient-text">Bonjour, l'equipe.</span>
               <br />
               <span className="greeting-sub">Comment puis-je vous aider aujourd'hui ?</span>
             </h1>
@@ -138,31 +175,31 @@ function App() {
           </div>
         )}
 
-        {/* Barre de saisie style "Pill" */}
         <div className="input-wrapper">
           <form onSubmit={handleSubmit} className="input-pill">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Demander à TechCorp AI..."
+              placeholder="Demander a TechCorp AI..."
               disabled={isLoading}
               className="main-input"
+              maxLength={1500}
             />
-            
+
             <div className="selectors-group">
-              <select 
-                className="pill-select" 
-                value={modelName} 
+              <select
+                className="pill-select"
+                value={modelName}
                 onChange={(e) => setModelName(e.target.value)}
               >
                 <option value="phi3-financial">phi3-financial</option>
-                <option value="medical_model">Médical</option>
+                <option value="medical_model">Medical</option>
               </select>
 
-              <select 
-                className="pill-select" 
-                value={serverUrl} 
+              <select
+                className="pill-select"
+                value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
               >
                 <option value="http://100.75.233.27:11434">Ollama Distant</option>
@@ -176,7 +213,7 @@ function App() {
             </button>
           </form>
           <div className="disclaimer">
-            Ce projet est un déploiement expérimental. L'IA peut faire des erreurs.
+            Entrees filtrees (anti-injection). Ce projet est experimental — l'IA peut faire des erreurs.
           </div>
         </div>
       </main>
