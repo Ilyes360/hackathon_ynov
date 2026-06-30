@@ -13,7 +13,7 @@ print("2. Nettoyage intensif (Mode Hackathon)...")
 # Suppression des valeurs nulles
 df_clean = df.dropna(subset=['Patient', 'Doctor'])
 
-# Suppression des doublons stricts pour éviter l'overfitting
+# Suppression des doublons stricts pour éviter l'overf:itting
 df_clean = df_clean.drop_duplicates(subset=['Patient'])
 
 # Filtrage de qualité des conversations (< 50 caractères)
